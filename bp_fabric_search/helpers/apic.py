@@ -1,9 +1,11 @@
 import json
+import os
 from argparse import ArgumentParser
 from typing import AnyStr
 
 import urllib3
 from httpx import AsyncClient
+from httpx import Timeout
 
 from bp_fabric_search.helpers.logging import logger
 from bp_fabric_search.inventory import InventoryItem
@@ -28,7 +30,9 @@ async def build_sessions(item: InventoryItem, username: str, password: str) -> N
     payload = {"aaaUser": {"attributes": {"name": username, "pwd": password}}}
 
     try:
-        client = AsyncClient(base_url=f"{item.host}/api", verify=False)
+        timeout_value = float(os.getenv("APIC_TIMEOUT", "30.0"))
+        timeout = Timeout(timeout_value)
+        client = AsyncClient(base_url=f"{item.host}/api", verify=False, timeout=timeout)
         resp = await client.post("/aaaLogin.json", json=payload)
         logger.debug(f"Requested URL: {resp.request.url}")
         logger.debug(f"Response Code: {resp.status_code}")
